@@ -1,15 +1,14 @@
-#include <iostream>
 #pragma once
+#include <bits/stdc++.h>
 #include <math.h>
 #include "print_mat.h"
 #include "matrix_operation.h"
+
 using namespace std;
 
-void update_H1(double **W, double **H, double **V, int row, int k, int col)
+void update_H(double **W, double **H, double **V, int row, int k, int col)
 {
-
-   double *transpose_W[N], *numerator[N],*transpose_WV[N],*transpose_WVG[N],*G[N],*WH[N];
-
+    double *transpose_W[N], *numerator[N],*transpose_WV[N],*D[N],*WH[N];
     // allocating transpose_W and numerator
     for (int i = 0; i < k; i++)
         transpose_W[i] = (double *)malloc(row * sizeof(double));
@@ -20,140 +19,41 @@ void update_H1(double **W, double **H, double **V, int row, int k, int col)
     for(int i=0;i<k;i++)
         transpose_WV[i]=(double *)malloc(col * sizeof(double));
 
-     for(int i=0;i<k;i++)
-        transpose_WVG[i]=(double *)malloc(col * sizeof(double));
+     for(int i=0;i<col;i++)
+        D[i]=(double *)malloc(col * sizeof(double));
 
-    for(int i=0;i<row;i++)
-        G[i]=(double *)malloc(col * sizeof(double));
-
-    for(int i=0;i<row;i++)
-        WH[i]=(double *)malloc(col * sizeof(double));
+      for(int i=0;i<row;i++)
+      WH[i]=(double *)malloc(col * sizeof(double));
 
 
     multiply(WH,W, H, row, k, col);
-    FindG(G,V,WH,row,col);
-    free_matrix(WH, row);
-
+    FindD(D,V,WH,row,col);
 
     //cout<<"D matrix is:"<<endl;
     //print_matrix(D,row,col);
 
     transpose(W, transpose_W, row, k); // WT
+
     multiply(transpose_WV, transpose_W, V, k, row, col);// WT*V
-    multiply(transpose_WVG, transpose_WV, G, k, col, row);// WT*VD
-    free_matrix(transpose_WV, k);
+    multiply(numerator, transpose_WV, D, k, col, col);// WT*VD
 
-    double *AdjM[N],*degree[N],*HAdj[N],*alphaHAdj[N],*num1[N],*betaH[N];
 
-    for (int i = 0; i < row; i++)
-        AdjM[i] = (double *)malloc(col * sizeof(double));
-
-    for (int i = 0; i < row; i++)
-        degree[i] = (double *)malloc(col * sizeof(double));
+    double *den_part1[N], *denominator[N],*transpose_WWH[N];
 
     for (int i = 0; i < k; i++)
-        HAdj[i] = (double *)malloc(col * sizeof(double));
+        den_part1[i] = (double *)malloc(k * sizeof(double));
 
-    for (int i = 0; i < k; i++)
-        alphaHAdj[i] = (double *)malloc(col * sizeof(double));
-
-    for (int i = 0; i < k; i++)
-        num1[i] = (double *)malloc(col * sizeof(double));
-
-    for (int i = 0; i < k; i++)
-        betaH[i] = (double *)malloc(col * sizeof(double));
-
-    AdjacentMatrix(AdjM,V,row,col);
-    DegreeMatrix(degree,AdjM,row,col);
-
-    multiply(HAdj,H,AdjM,k,col,row);
-    free_matrix(AdjM, row);
-
-    constMultiplication(alphaHAdj,HAdj,alpha,k,col);
-    free_matrix(HAdj, k);
-
-    add_element_wise(num1,transpose_WVG,alphaHAdj,k,col);
-    free_matrix(transpose_WVG, k);
-    free_matrix(alphaHAdj, k);
-
-
-    constMultiplication(betaH,H,beta,k,col);
-    add_element_wise(numerator,num1,betaH,k,col);
-    free_matrix(num1, k);
-    free_matrix(betaH, k);
-
-
-    double *den_part1[N], *denominator[N],*transpose_WW[N],*transpose_WWH[N],*transpose_WWHG[N],*Hdegree[N],*alphaHdegree[N],*En[N],*HEn[N],*betaHE[N],*E[N];
-
-    for (int i = 0; i < k; i++)
-        den_part1[i] = (double *)malloc(col * sizeof(double));
-
-    for (int i = 0; i < k; i++)
-        transpose_WW[i] = (double *)malloc(k * sizeof(double));
-
-    for (int i = 0; i < k; i++)
+     for (int i = 0; i < k; i++)
         transpose_WWH[i] = (double *)malloc(col * sizeof(double));
-
-    for (int i = 0; i < k; i++)
-        transpose_WWHG[i] = (double *)malloc(col * sizeof(double));
-
-    for (int i = 0; i < k; i++)
-        Hdegree[i] = (double *)malloc(col * sizeof(double));
-
-    for (int i = 0; i < k; i++)
-        alphaHdegree[i] = (double *)malloc(col * sizeof(double));
 
     for (int i = 0; i < k; i++)
         denominator[i] = (double *)malloc(col * sizeof(double));
 
-     for (int i = 0; i < row; i++)
-        En[i] = (double *)malloc(col * sizeof(double));
+    multiply(den_part1, transpose_W, W, k, row, k); // WT*W
+    multiply(transpose_WWH, den_part1, H, k, k, col);//(WT*W)*H
+    multiply(denominator, transpose_WWH, D, k, col, col);//(WT*W)*HD
 
-     for (int i = 0; i < k; i++)
-        HEn[i] = (double *)malloc(col * sizeof(double));
-
-     for (int i = 0; i < k; i++)
-        betaHE[i] = (double *)malloc(col * sizeof(double));
-
-    for (int i = 0; i < row; i++)
-        E[i] = (double *)malloc(col * sizeof(double));
-
-
-    multiply(transpose_WW, transpose_W, W, k, row, k); // WT*W
-    free_matrix(transpose_W, k);
-
-    multiply(transpose_WWH, transpose_WW, H, k, k, col);//(WT*W)*H
-    free_matrix(transpose_WW, k);
-
-    multiply(transpose_WWHG, transpose_WWH, G, k, col, row);//(WT*W)*HD
-    free_matrix(G, row);
-    free_matrix(transpose_WWH, k);
-
-    multiply(Hdegree,H,degree,k,col,col);
-    free_matrix(degree, row);
-
-    constMultiplication(alphaHdegree,Hdegree,alpha,k,col);
-    free_matrix(Hdegree, k);
-
-    add_element_wise(den_part1,transpose_WWHG,alphaHdegree,k,col);
-    free_matrix(transpose_WWHG, k);
-    free_matrix(alphaHdegree, k);
-
-    Ecalculation(E,row,col);
-    constMultiplication(En,E,1/row,row,col);
-    free_matrix(E, row);
-
-    multiply(HEn,H,En,k,col,col);
-    free_matrix(En, row);
-
-    constMultiplication(betaHE,HEn,beta,k,col);
-    free_matrix(HEn, k);
-
-    add_element_wise(denominator,den_part1,betaHE,k,col);
-    free_matrix(den_part1, k);
-    free_matrix(betaHE, k);
-
-    double *updated_H[N];                           // the term that is to be multiplied with H
+    double *updated_H[N];    // the term that is to be multiplied with H
 
     for (int i = 0; i < k; i++)
         updated_H[i] = (double *)malloc(col * sizeof(double));
@@ -168,98 +68,64 @@ void update_H1(double **W, double **H, double **V, int row, int k, int col)
     copy_matrix(ans_H, H, k, col);
     free_matrix(ans_H, k);
     free_matrix(updated_H, k);
-   
-    free_matrix(numerator, k); 
     free_matrix(denominator, k);
-    
-}
+    free_matrix(den_part1, k);
+    free_matrix(numerator, k);
+    free_matrix(transpose_W, k);
 
-void update_W1(double **W, double **H, double **V, int row, int k, int col)
+    free_matrix(transpose_WV, k);
+    free_matrix(transpose_WWH, k);
+    free_matrix(D, col);
+    free_matrix(WH, row);
+
+
+}
+void update_W(double **W, double **H, double **V, int row, int k, int col)
 {
-    double *HT[N], *numerator[N],*VG[N],*G[N],*WH[N];
+    double *HT[N], *numerator[N],*VD[N],*D[N],*WH[N];
 
     for (int i = 0; i < col; i++)
         HT[i] = (double *)malloc(k * sizeof(double));
 
     for (int i = 0; i < row; i++)
-        VG[i] = (double *)malloc(col * sizeof(double));
+        VD[i] = (double *)malloc(col * sizeof(double));
 
     for (int i = 0; i < row; i++)
         numerator[i] = (double *)malloc(k * sizeof(double));
 
-    for(int i=0;i<row;i++)
-        G[i]=(double *)malloc(col * sizeof(double));
+    for(int i=0;i<col;i++)
+        D[i]=(double *)malloc(col * sizeof(double));
 
     for(int i=0;i<row;i++)
         WH[i]=(double *)malloc(col * sizeof(double));
 
 
     multiply(WH,W, H, row, k, col);
-
-    //cout<<"WH matrix is:"<<endl;
-    //print_matrix(WH,row,col);
-    FindG(G,V,WH,row,col);
-    free_matrix(WH, row);
-    //cout<<"G matrix is:"<<endl;
-   // print_matrix(G,row,col);
+    FindD(D,V,WH,row,col);
 
     //cout<<"D matrix is:"<<endl;
    // print_matrix(D,row,col);
 
-    transpose(H, HT, k, col);
-     //print_matrix(HT,col,k); // HT
-    multiply(VG, V, G, row, col, col);
-    free_matrix(G, row);
-    //cout<<"VG matrix is:"<<endl;
-    //print_matrix(VG,row,col);
-    multiply(numerator, VG, HT, row, col, k); 
-    free_matrix(VG, row);// VG*HT
+    transpose(H, HT, k, col); // HT
+    multiply(VD, V, D, row, col, col); // V*D
+    multiply(numerator, VD, HT, row, col, k); // VD*HT
 
-    double *HG[N],*HG_transpose_H[N],*WHG_transpose_H[N],*WP[N],*gammaWP[N],*P[N];
+    double *HD[N],*HD_transpose_H[N];
 
      for (int i = 0; i < k; i++)
-        HG[i] = (double *)malloc( col * sizeof(double));
+        HD[i] = (double *)malloc( col * sizeof(double));
 
      for (int i = 0; i < k; i++)
-        HG_transpose_H[i] = (double *)malloc( k * sizeof(double));
+        HD_transpose_H[i] = (double *)malloc( k * sizeof(double));
 
-     for(int i=0;i<row;i++)
-         WHG_transpose_H[i] = (double *)malloc( k * sizeof(double));
-
-     for(int i=0;i<k;i++)
-        P[i] = (double *)malloc( k * sizeof(double));
-
-      for(int i=0;i<row;i++)
-        WP[i] = (double *)malloc( k * sizeof(double));
-
-      for(int i=0;i<row;i++)
-        gammaWP[i] = (double *)malloc( k * sizeof(double));
-
-
-    multiply(HG, H, G, k, col, row); // HD
-    multiply(HG_transpose_H, HG, HT, k, col, k);// HD_transpose_H
-    free_matrix(HT, col);
-    free_matrix(HG, k);
-
-    multiply(WHG_transpose_H,W,HG_transpose_H,row,k,k);
-    free_matrix(HG_transpose_H, k);
-
-    FindP(P,W,row,k);
-    multiply(WP,W,P,row,k,k);
-    free_matrix(P, k);
-    constMultiplication(gammaWP,WP,gamma,row,k);
-    free_matrix(WP, row);
-
-
+    multiply(HD, H, D, k, col, col); // HD
+    multiply(HD_transpose_H, HD, HT, k, col, k); // HD_transpose_H
 
     double *denominator[N];
     for (int i = 0; i < row; i++)
         denominator[i] = (double *)malloc(k * sizeof(double));
 
-    add_element_wise(denominator,WHG_transpose_H ,gammaWP , row, k);
-    free_matrix(gammaWP, row);
-
-    free_matrix(WHG_transpose_H, row);
+    multiply(denominator, W, HD_transpose_H, row, k, k);
 
     double *updated_W[N];
 
@@ -277,18 +143,20 @@ void update_W1(double **W, double **H, double **V, int row, int k, int col)
 
     copy_matrix(ans_W, W, row, k);
     free_matrix(ans_W, row);
-    
-    free_matrix(numerator, row);
-    free_matrix(denominator, row);
     free_matrix(updated_W, row);
+    free_matrix(denominator, row);
+    free_matrix(HT, col);
+    free_matrix(numerator, row);
 
+    free_matrix(VD, row);
+    free_matrix(HD, k);
+    free_matrix(HD_transpose_H, k);
+    free_matrix(D, col);
+    free_matrix(WH, row);
 }
 
-
-
-void RSNMF()
+void l21_norm()
 {
-
     double *matrix[N];
     int row, col, i, j, k;
 
@@ -315,7 +183,7 @@ void RSNMF()
     }
 
     } else if (choice == 'F' || choice == 'f') {
-        ifstream inputFile("robust.txt");
+        ifstream inputFile("matrix.txt");
 
         if (!inputFile.is_open()) {
             cout << "Failed to open the file." << endl;
@@ -343,15 +211,13 @@ void RSNMF()
         return;
     }
 
-    // Rest of the code remains unchanged
-    // ...
 
     // Deallocate memory for the matrix
     //print_matrix(matrix, row, col);
     //  Dimension of broken matrix
     cout<<"Enter the dimension in which you want to break:";
     cin >> k;
-    double *W[N], *H[N]; // broken down in m*k and k*n matrix
+    double *W[N], *H[N]; 
 
     cout << "Enter 'M' to manually input W matrix or 'F' to read from a file: ";
     char ch0;
@@ -371,7 +237,7 @@ void RSNMF()
     }
 
     else if (ch0 == 'F' || ch0 == 'f') {
-        ifstream wFile("W1.txt");
+        ifstream wFile("W.txt");
 
         if (!wFile.is_open()) {
             cout << "Failed to open the W matrix file." << endl;
@@ -421,7 +287,7 @@ void RSNMF()
         }
 
     } else if (ch1== 'F' || ch1 == 'f') {
-        ifstream hFile("H1.txt");
+        ifstream hFile("H.txt");
 
         if (!hFile.is_open()) {
             cout << "Failed to open the H matrix file." << endl;
@@ -477,12 +343,12 @@ void RSNMF()
 
         if ((counter % 2) == 0)
         {
-            update_H1(W, H, matrix, row, k, col);
+            update_H(W, H, matrix, row, k, col);
             //cout << "New H" << endl;
         }
         else
         {
-             update_W1(W, H, matrix, row, k, col);
+            update_W(W, H, matrix, row, k, col);
            // cout << "New W" << endl;
             //print_matrix(W,row,k);
         }
@@ -507,7 +373,7 @@ void RSNMF()
     printf("Total number of iterations before arriving at result: %d\n", counter);
     printf("The broken down matrix:\n ");
     print_two_matrix(W, H, row, k, col);
-
 }
+
 
 
